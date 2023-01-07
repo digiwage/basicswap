@@ -33,6 +33,7 @@ from sqlalchemy.orm.session import close_all_sessions
 
 from .interface.part import PARTInterface, PARTInterfaceAnon, PARTInterfaceBlind
 from .interface.btc import BTCInterface
+from .interface.wage import WAGEInterface
 from .interface.ltc import LTCInterface
 from .interface.nmc import NMCInterface
 from .interface.xmr import XMRInterface
@@ -578,6 +579,8 @@ class BasicSwap(BaseApp):
             return DASHInterface(self.coin_clients[coin], self.chain, self)
         elif coin == Coins.FIRO:
             return FIROInterface(self.coin_clients[coin], self.chain, self)
+        elif coin == Coins.WAGE:
+            return WAGEInterface(self.coin_clients[coin], self.chain, self)
         else:
             raise ValueError('Unknown coin type')
 
@@ -1123,7 +1126,7 @@ class BasicSwap(BaseApp):
             raise ValueError('Invalid swap type for PART_ANON')
         if (coin_from == Coins.PART_BLIND or coin_to == Coins.PART_BLIND) and swap_type != SwapTypes.XMR_SWAP:
             raise ValueError('Invalid swap type for PART_BLIND')
-        if coin_from in (Coins.PIVX, Coins.DASH, Coins.FIRO, Coins.NMC) and swap_type == SwapTypes.XMR_SWAP:
+        if coin_from in (Coins.WAGE, Coins.PIVX, Coins.DASH, Coins.FIRO, Coins.NMC) and swap_type == SwapTypes.XMR_SWAP:
             raise ValueError('TODO: {} -> XMR'.format(coin_from.name))
 
     def notify(self, event_type, event_data, session=None):

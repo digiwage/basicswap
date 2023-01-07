@@ -61,6 +61,9 @@ DASH_VERSION_TAG = os.getenv('DASH_VERSION_TAG', '')
 FIRO_VERSION = os.getenv('FIRO_VERSION', '0.14.99.1')
 FIRO_VERSION_TAG = os.getenv('FIRO_VERSION_TAG', '')
 
+DIGIWAGE_VERSION = os.getenv('DIGIWAGE_VERSION', '2.0.1')
+DIGIWAGE_VERSION_TAG = os.getenv('DIGIWAGE_VERSION_TAG', '')
+
 GUIX_SSL_CERT_DIR = None
 
 
@@ -74,6 +77,9 @@ known_coins = {
     'dash': (DASH_VERSION, DASH_VERSION_TAG, ('pasta',)),
     # 'firo': (FIRO_VERSION, FIRO_VERSION_TAG, ('reuben',)),
     'firo': (FIRO_VERSION, FIRO_VERSION_TAG, ('tecnovert',)),
+    # 'digiwage': (DIGIWAGE_VERSION, DIGIWAGE_VERSION_TAG, ('digiwage',)),
+    'digiwage': (DIGIWAGE_VERSION, DIGIWAGE_VERSION_TAG, ('tecnovert',)),
+
 }
 
 expected_key_ids = {
@@ -158,6 +164,12 @@ FIRO_RPC_PORT = int(os.getenv('FIRO_RPC_PORT', 8888))
 FIRO_ONION_PORT = int(os.getenv('FIRO_ONION_PORT', 8168))  # nDefaultPort
 FIRO_RPC_USER = os.getenv('FIRO_RPC_USER', '')
 FIRO_RPC_PWD = os.getenv('FIRO_RPC_PWD', '')
+
+WAGE_RPC_HOST = os.getenv('WAGE_RPC_HOST', '127.0.0.1')
+WAGE_RPC_PORT = int(os.getenv('WAGE_RPC_PORT', 46002))
+WAGE_ONION_PORT = int(os.getenv('WAGE_ONION_PORT', 46003))  # nDefaultPort
+WAGE_RPC_USER = os.getenv('WAGE_RPC_USER', '')
+WAGE_RPC_PWD = os.getenv('WAGE_RPC_PWD', '')
 
 TOR_PROXY_HOST = os.getenv('TOR_PROXY_HOST', '127.0.0.1')
 TOR_PROXY_PORT = int(os.getenv('TOR_PROXY_PORT', 9050))
@@ -607,6 +619,15 @@ def prepareCore(coin, version_data, settings, data_dir, extra_opts={}):
                 raise ValueError('Firo: Unknown architecture')
             release_url = 'https://github.com/tecnovert/particl-core/releases/download/v{}/{}'.format(version + version_tag, release_filename)
             assert_url = 'https://github.com/tecnovert/particl-core/releases/download/v%s/SHA256SUMS.asc' % (version + version_tag)
+        elif coin == 'digiwage':
+            if BIN_ARCH == 'x86_64-linux-gnu':
+                release_filename = 'digiwage-2.0.1-x86_64-linux-gnu.tar.gz'
+            elif BIN_ARCH == 'osx64':
+                release_filename = 'digiwage-2.0.1-x86_64-apple-darwin18.tar.gz'
+            else:
+                raise ValueError('Digiwage: Unknown architecture')
+            release_url = 'https://github.com/digiwage/digiwage/releases/download/v{}/{}'.format(version + version_tag, release_filename)
+            assert_url = 'https://github.com/digiwage/digiwage/releases/download/v2.0.1/digiwage-2.0.1-x86_64-linux-gnu.tar.gz' # % (version + version_tag)
         else:
             raise ValueError('Unknown coin')
 
@@ -620,7 +641,7 @@ def prepareCore(coin, version_data, settings, data_dir, extra_opts={}):
         if not os.path.exists(assert_path):
             downloadFile(assert_url, assert_path)
 
-        if coin not in ('firo', ):
+        if coin not in ('firo', 'digiwage'):
             assert_sig_url = assert_url + ('.asc' if major_version >= 22 else '.sig')
             assert_sig_filename = '{}-{}-{}-build-{}.assert.sig'.format(coin, os_name, version, signing_key_name)
             assert_sig_path = os.path.join(bin_dir, assert_sig_filename)
@@ -658,6 +679,8 @@ def prepareCore(coin, version_data, settings, data_dir, extra_opts={}):
 
     if coin in ('pivx', 'firo'):
         pubkey_filename = '{}_{}.pgp'.format('particl', signing_key_name)
+    elif coin == 'digiwage':
+         print("Hello World")
     else:
         pubkey_filename = '{}_{}.pgp'.format(coin, signing_key_name)
     pubkeyurls = [
@@ -852,6 +875,9 @@ def prepareDataDir(coin, settings, chain, particl_mnemonic, extra_opts={}):
             fp.write('usehd=1\n')
             if FIRO_RPC_USER != '':
                 fp.write('rpcauth={}:{}${}\n'.format(FIRO_RPC_USER, salt, password_to_hmac(salt, FIRO_RPC_PWD)))
+        elif coin == 'digiwage':
+            if WAGE_RPC_USER != '':
+                fp.write('rpcauth={}:{}${}\n'.format(WAGE_RPC_USER, salt, password_to_hmac(salt, WAGE_RPC_PWD)))
         else:
             logger.warning('Unknown coin %s', coin)
 
@@ -1497,6 +1523,21 @@ def main():
             'conf_target': 2,
             'core_version_group': 18,
             'chain_lookups': 'local',
+        },
+        'digiwage': {
+            'connection_type': 'rpc' if 'digiwage' in with_coins else 'none',
+            'manage_daemon': True if ('digiwage' in with_coins and WAGE_RPC_HOST == '127.0.0.1') else False,
+            'rpchost': WAGE_RPC_HOST,
+            'rpcport': WAGE_RPC_PORT + port_offset,
+            'onionport': WAGE_ONION_PORT + port_offset,
+            'datadir': os.getenv('WAGE_DATA_DIR', os.path.join(data_dir, 'digiwage')),
+            'bindir': os.path.join(bin_dir, 'digiwage'),
+            'use_segwit': False,
+            'use_csv': False,
+            'blocks_confirmed': 1,
+            'conf_target': 2,
+            'core_version_group': 20,
+            'chain_lookups': 'local',
         }
     }
 
@@ -1521,6 +1562,9 @@ def main():
     if FIRO_RPC_USER != '':
         chainclients['firo']['rpcuser'] = FIRO_RPC_USER
         chainclients['firo']['rpcpassword'] = FIRO_RPC_PWD
+    if WAGE_RPC_USER != '':
+        chainclients['digiwage']['rpcuser'] = WAGE_RPC_USER
+        chainclients['digiwage']['rpcpassword'] = WAGE_RPC_PWD
 
     chainclients['monero']['walletsdir'] = os.getenv('XMR_WALLETS_DIR', chainclients['monero']['datadir'])
 
