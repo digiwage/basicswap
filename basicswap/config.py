@@ -52,7 +52,7 @@ FIROD = os.getenv('FIROD', 'firod' + bin_suffix)
 FIRO_CLI = os.getenv('FIRO_CLI', 'firo-cli' + bin_suffix)
 FIRO_TX = os.getenv('FIRO_TX', 'firo-tx' + bin_suffix)
 
-DIGIWAGE_BINDIR = os.path.expanduser(os.getenv('DIGIWAGE_BINDIR', os.path.join(DEFAULT_TEST_BINDIR, 'wage')))
+DIGIWAGE_BINDIR = os.path.expanduser(os.getenv('DIGIWAGE_BINDIR', os.path.join(DEFAULT_TEST_BINDIR, 'digiwage')))
 DIGIWAGED = os.getenv('DIGIWAGED', 'digiwaged' + bin_suffix)
 DIGIWAGE_CLI = os.getenv('DIGIWAGE_CLI', 'digiwage-cli' + bin_suffix)
 DIGIWAGE_TX = os.getenv('DIGIWAGE_TX', 'digiwage-tx' + bin_suffix)

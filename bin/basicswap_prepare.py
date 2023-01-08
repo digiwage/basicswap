@@ -77,8 +77,7 @@ known_coins = {
     'dash': (DASH_VERSION, DASH_VERSION_TAG, ('pasta',)),
     # 'firo': (FIRO_VERSION, FIRO_VERSION_TAG, ('reuben',)),
     'firo': (FIRO_VERSION, FIRO_VERSION_TAG, ('tecnovert',)),
-    # 'digiwage': (DIGIWAGE_VERSION, DIGIWAGE_VERSION_TAG, ('digiwage',)),
-    'digiwage': (DIGIWAGE_VERSION, DIGIWAGE_VERSION_TAG, ('tecnovert',)),
+    'digiwage': (DIGIWAGE_VERSION, DIGIWAGE_VERSION_TAG, ('digiwage',)),
 
 }
 
@@ -92,6 +91,7 @@ expected_key_ids = {
     'fuzzbawls': ('3BDCDA2D87A881D9',),
     'pasta': ('52527BEDABE87984',),
     'reuben': ('1290A1D0FA7EE109',),
+    'digiwage': ('8797E069355897D7',),
 }
 
 USE_PLATFORM = os.getenv('USE_PLATFORM', platform.system())
@@ -591,6 +591,11 @@ def prepareCore(coin, version_data, settings, data_dir, extra_opts={}):
             release_url = 'https://github.com/tecnovert/particl-core/releases/download/v{}/{}'.format(version + version_tag, release_filename)
             assert_filename = 'pivx-{}-6.0-build.assert'.format(os_name)
             assert_url = 'https://raw.githubusercontent.com/tecnovert/gitian.sigs/pivx/5.4.99_scantxoutset-{}/tecnovert/{}'.format(os_dir_name, assert_filename)
+        elif coin == 'digiwage':
+            release_filename = '{}-{}-{}.{}'.format(coin, version, BIN_ARCH, FILE_EXT)
+            release_url = 'https://github.com/digiwage/digiwage/releases/download/v{}/{}'.format(version + version_tag, release_filename)
+            assert_filename = 'SHA256SUMS.asc'
+            assert_url = 'https://github.com/digiwage/digiwage/releases/download/delta-2.0.1/SHA256SUMS.asc'
         elif coin == 'dash':
             release_filename = '{}-{}-{}.{}'.format('dashcore', version + version_tag, BIN_ARCH, FILE_EXT)
             release_url = 'https://github.com/dashpay/dash/releases/download/v{}/{}'.format(version + version_tag, release_filename)
@@ -619,18 +624,18 @@ def prepareCore(coin, version_data, settings, data_dir, extra_opts={}):
                 raise ValueError('Firo: Unknown architecture')
             release_url = 'https://github.com/tecnovert/particl-core/releases/download/v{}/{}'.format(version + version_tag, release_filename)
             assert_url = 'https://github.com/tecnovert/particl-core/releases/download/v%s/SHA256SUMS.asc' % (version + version_tag)
-        elif coin == 'digiwage':
-            if BIN_ARCH == 'x86_64-linux-gnu':
-                release_filename = 'digiwage-2.0.1-x86_64-linux-gnu.tar.gz'
-            elif BIN_ARCH == 'osx64':
-                release_filename = 'digiwage-2.0.1-x86_64-apple-darwin18.tar.gz'
-            else:
-                raise ValueError('Digiwage: Unknown architecture')
-            release_url = 'https://github.com/digiwage/digiwage/releases/download/v{}/{}'.format(version + version_tag, release_filename)
-            assert_url = 'https://github.com/digiwage/digiwage/releases/download/v2.0.1/digiwage-2.0.1-x86_64-linux-gnu.tar.gz' # % (version + version_tag)
+       #elif coin == 'digiwage':
+          #  if BIN_ARCH == 'x86_64-linux-gnu':
+           #     release_filename = 'digiwage-2.0.1-x86_64-linux-gnu.tar.gz'
+          #  elif BIN_ARCH == 'osx64':
+          #      release_filename = 'digiwage-2.0.1-x86_64-apple-darwin18.tar.gz'
+        #    else:
+        #        raise ValueError('Digiwage: Unknown architecture')
+        #    release_url = 'https://github.com/digiwage/digiwage/releases/download/v{}/{}'.format(version + version_tag, release_filename)
+         #   assert_url = 'https://github.com/digiwage/digiwage/releases/download/delta-2.0.1/SHA256SUMS.asc'
+           # assert_url = 'https://github.com/digiwage/digiwage/releases/download/v%s/SHA256SUMS.asc' % (version + version_tag)
         else:
             raise ValueError('Unknown coin')
-
         release_path = os.path.join(bin_dir, release_filename)
         if not os.path.exists(release_path):
             downloadFile(release_url, release_path)
@@ -680,7 +685,7 @@ def prepareCore(coin, version_data, settings, data_dir, extra_opts={}):
     if coin in ('pivx', 'firo'):
         pubkey_filename = '{}_{}.pgp'.format('particl', signing_key_name)
     elif coin == 'digiwage':
-         print("Hello World")
+        pubkey_filename = 'digiwage.asc'
     else:
         pubkey_filename = '{}_{}.pgp'.format(coin, signing_key_name)
     pubkeyurls = [
@@ -693,8 +698,10 @@ def prepareCore(coin, version_data, settings, data_dir, extra_opts={}):
         pubkeyurls.append('https://raw.githubusercontent.com/monero-project/monero/master/utils/gpg_keys/binaryfate.asc')
     if coin == 'firo':
         pubkeyurls.append('https://firo.org/reuben.asc')
+    if coin == 'digiwage':
+        pubkeyurls.append('https://raw.githubusercontent.com/digiwage/digiwage/master/digiwage.asc')
 
-    if coin in ('monero', 'firo'):
+    if coin in ('monero', 'firo','digiwage'):
         with open(assert_path, 'rb') as fp:
             verified = gpg.verify_file(fp)
 
@@ -716,7 +723,6 @@ def prepareCore(coin, version_data, settings, data_dir, extra_opts={}):
     ensureValidSignatureBy(verified, signing_key_name)
 
     extractCore(coin, version_data, settings, bin_dir, release_path, extra_opts)
-
 
 def writeTorSettings(fp, coin, coin_settings, tor_control_password):
     onionport = coin_settings['onionport']
