@@ -328,7 +328,7 @@ chainparams = {
             'min_amount': 1000,
             'max_amount': 100000 * COIN,
         }
- },
+    },
     Coins.WAGE: {
         'name': 'digiwage',
         'ticker': 'WAGE',
@@ -366,6 +366,7 @@ chainparams = {
             'max_amount': 100000 * COIN,
         }
     }
+}
 }
 ticker_map = {}
 

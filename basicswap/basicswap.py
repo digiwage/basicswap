@@ -33,7 +33,6 @@ from sqlalchemy.orm.session import close_all_sessions
 
 from .interface.part import PARTInterface, PARTInterfaceAnon, PARTInterfaceBlind
 from .interface.btc import BTCInterface
-from .interface.wage import WAGEInterface
 from .interface.ltc import LTCInterface
 from .interface.nmc import NMCInterface
 from .interface.xmr import XMRInterface
@@ -4768,7 +4767,7 @@ class BasicSwap(BaseApp):
             self.logBidEvent(bid.bid_id, EventLogTypes.DEBUG_TWEAK_APPLIED, 'ind {}'.format(bid.debug_ind), session)
 
         try:
-            b_lock_tx_id = ci_to.publishBLockTx(xmr_swap.pkbv, xmr_swap.pkbs, bid.amount_to, xmr_offer.b_fee_rate, unlock_time=unlock_time)
+            b_lock_tx_id = ci_to.publishBLockTx(xmr_swap.vkbv, xmr_swap.pkbs, bid.amount_to, xmr_offer.b_fee_rate, unlock_time=unlock_time)
             if bid.debug_ind == DebugTypes.B_LOCK_TX_MISSED_SEND:
                 self.log.debug('XMR bid %s: Debug %d - Losing xmr lock tx %s.', bid_id.hex(), bid.debug_ind, b_lock_tx_id.hex())
                 self.logBidEvent(bid.bid_id, EventLogTypes.DEBUG_TWEAK_APPLIED, 'ind {}'.format(bid.debug_ind), session)
@@ -5841,6 +5840,9 @@ class BasicSwap(BaseApp):
             filter_coin_to = filters.get('coin_to', None)
             if filter_coin_to and filter_coin_to > -1:
                 q = q.filter(Offer.coin_to == int(filter_coin_to))
+            filter_include_sent = filters.get('include_sent', None)
+            if filter_include_sent and filter_include_sent is not True:
+                q = q.filter(Offer.was_sent == False)  # noqa: E712
 
             order_dir = filters.get('sort_dir', 'desc')
             order_by = filters.get('sort_by', 'created_at')

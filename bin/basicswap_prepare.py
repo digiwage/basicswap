@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2019-2022 tecnovert
+# Copyright (c) 2019-2023 tecnovert
 # Distributed under the MIT software license, see the accompanying
 # file LICENSE or http://www.opensource.org/licenses/mit-license.php.
 
@@ -52,8 +52,8 @@ MONERO_VERSION = os.getenv('MONERO_VERSION', '0.18.1.2')
 MONERO_VERSION_TAG = os.getenv('MONERO_VERSION_TAG', '')
 XMR_SITE_COMMIT = '4624278f68135d2e3eeea58fe53d07340e58c480'  # Lock hashes.txt to monero version
 
-PIVX_VERSION = os.getenv('PIVX_VERSION', '5.4.99')
-PIVX_VERSION_TAG = os.getenv('PIVX_VERSION_TAG', '_scantxoutset')
+PIVX_VERSION = os.getenv('PIVX_VERSION', '5.5.0')
+PIVX_VERSION_TAG = os.getenv('PIVX_VERSION_TAG', '')
 
 DASH_VERSION = os.getenv('DASH_VERSION', '18.1.0')
 DASH_VERSION_TAG = os.getenv('DASH_VERSION_TAG', '')
@@ -73,12 +73,11 @@ known_coins = {
     'bitcoin': (BITCOIN_VERSION, BITCOIN_VERSION_TAG, ('laanwj',)),
     'namecoin': ('0.18.0', '', ('JeremyRand',)),
     'monero': (MONERO_VERSION, MONERO_VERSION_TAG, ('binaryfate',)),
-    'pivx': (PIVX_VERSION, PIVX_VERSION_TAG, ('tecnovert',)),
+    'pivx': (PIVX_VERSION, PIVX_VERSION_TAG, ('fuzzbawls',)),
     'dash': (DASH_VERSION, DASH_VERSION_TAG, ('pasta',)),
     # 'firo': (FIRO_VERSION, FIRO_VERSION_TAG, ('reuben',)),
     'firo': (FIRO_VERSION, FIRO_VERSION_TAG, ('tecnovert',)),
     'digiwage': (DIGIWAGE_VERSION, DIGIWAGE_VERSION_TAG, ('digiwage',)),
-
 }
 
 expected_key_ids = {
@@ -91,7 +90,7 @@ expected_key_ids = {
     'fuzzbawls': ('3BDCDA2D87A881D9',),
     'pasta': ('52527BEDABE87984',),
     'reuben': ('1290A1D0FA7EE109',),
-    'digiwage': ('8797E069355897D7',),
+    'digiwage': ('CF50DBEADD4D6C96',),
 }
 
 USE_PLATFORM = os.getenv('USE_PLATFORM', platform.system())
@@ -371,6 +370,13 @@ def testOnionLink():
     logger.info('Onion links work.')
 
 
+def havePubkey(gpg, key_id):
+    for key in gpg.list_keys():
+        if key['keyid'] == key_id:
+            return True
+    return False
+
+
 def downloadPIVXParams(output_dir):
     # util/fetch-params.sh
 
@@ -588,14 +594,9 @@ def prepareCore(coin, version_data, settings, data_dir, extra_opts={}):
             assert_url = 'https://raw.githubusercontent.com/namecoin/gitian.sigs/master/%s-%s/%s/%s' % (version, os_dir_name, signing_key_name, assert_filename)
         elif coin == 'pivx':
             release_filename = '{}-{}-{}.{}'.format(coin, version, BIN_ARCH, FILE_EXT)
-            release_url = 'https://github.com/tecnovert/particl-core/releases/download/v{}/{}'.format(version + version_tag, release_filename)
-            assert_filename = 'pivx-{}-6.0-build.assert'.format(os_name)
-            assert_url = 'https://raw.githubusercontent.com/tecnovert/gitian.sigs/pivx/5.4.99_scantxoutset-{}/tecnovert/{}'.format(os_dir_name, assert_filename)
-        elif coin == 'digiwage':
-            release_filename = '{}-{}-{}.{}'.format(coin, version, BIN_ARCH, FILE_EXT)
-            release_url = 'https://github.com/digiwage/digiwage/releases/download/v{}/{}'.format(version + version_tag, release_filename)
-            assert_filename = 'SHA256SUMS.asc'
-            assert_url = 'https://github.com/digiwage/digiwage/releases/download/delta-2.0.1/SHA256SUMS.asc'
+            release_url = 'https://github.com/PIVX-Project/PIVX/releases/download/v{}/{}'.format(version + version_tag, release_filename)
+            assert_filename = '{}-{}-{}-build.assert'.format(coin, os_name, version.rsplit('.', 1)[0])
+            assert_url = 'https://raw.githubusercontent.com/PIVX-Project/gitian.sigs/master/%s-%s/%s/%s' % (version + version_tag, os_dir_name, signing_key_name.capitalize(), assert_filename)
         elif coin == 'dash':
             release_filename = '{}-{}-{}.{}'.format('dashcore', version + version_tag, BIN_ARCH, FILE_EXT)
             release_url = 'https://github.com/dashpay/dash/releases/download/v{}/{}'.format(version + version_tag, release_filename)
@@ -624,18 +625,14 @@ def prepareCore(coin, version_data, settings, data_dir, extra_opts={}):
                 raise ValueError('Firo: Unknown architecture')
             release_url = 'https://github.com/tecnovert/particl-core/releases/download/v{}/{}'.format(version + version_tag, release_filename)
             assert_url = 'https://github.com/tecnovert/particl-core/releases/download/v%s/SHA256SUMS.asc' % (version + version_tag)
-       #elif coin == 'digiwage':
-          #  if BIN_ARCH == 'x86_64-linux-gnu':
-           #     release_filename = 'digiwage-2.0.1-x86_64-linux-gnu.tar.gz'
-          #  elif BIN_ARCH == 'osx64':
-          #      release_filename = 'digiwage-2.0.1-x86_64-apple-darwin18.tar.gz'
-        #    else:
-        #        raise ValueError('Digiwage: Unknown architecture')
-        #    release_url = 'https://github.com/digiwage/digiwage/releases/download/v{}/{}'.format(version + version_tag, release_filename)
-         #   assert_url = 'https://github.com/digiwage/digiwage/releases/download/delta-2.0.1/SHA256SUMS.asc'
-           # assert_url = 'https://github.com/digiwage/digiwage/releases/download/v%s/SHA256SUMS.asc' % (version + version_tag)
+        elif coin == 'digiwage':
+            release_filename = '{}-{}-{}.{}'.format(coin, version, BIN_ARCH, FILE_EXT)
+            release_url = 'https://github.com/digiwage/digiwage/releases/download/v{}/{}'.format(version + version_tag, release_filename)
+            assert_filename = '{}-{}-{}-build.assert'.format(coin, os_name, version.rsplit('.', 1)[0])
+            assert_url = 'https://raw.githubusercontent.com/digiwage/gitian.sigs/digiwage/2.0.1-{}/digiwage/{}'.format(os_dir_name, assert_filename)
         else:
             raise ValueError('Unknown coin')
+
         release_path = os.path.join(bin_dir, release_filename)
         if not os.path.exists(release_path):
             downloadFile(release_url, release_path)
@@ -646,7 +643,7 @@ def prepareCore(coin, version_data, settings, data_dir, extra_opts={}):
         if not os.path.exists(assert_path):
             downloadFile(assert_url, assert_path)
 
-        if coin not in ('firo', 'digiwage'):
+        if coin not in ('firo', ):
             assert_sig_url = assert_url + ('.asc' if major_version >= 22 else '.sig')
             assert_sig_filename = '{}-{}-{}-build-{}.assert.sig'.format(coin, os_name, version, signing_key_name)
             assert_sig_path = os.path.join(bin_dir, assert_sig_filename)
@@ -682,10 +679,8 @@ def prepareCore(coin, version_data, settings, data_dir, extra_opts={}):
                     for key in rv.fingerprints:
                         gpg.trust_keys(rv.fingerprints[0], 'TRUST_FULLY')
 
-    if coin in ('pivx', 'firo'):
+    if coin in ('firo', ):
         pubkey_filename = '{}_{}.pgp'.format('particl', signing_key_name)
-    elif coin == 'digiwage':
-        pubkey_filename = 'digiwage.asc'
     else:
         pubkey_filename = '{}_{}.pgp'.format(coin, signing_key_name)
     pubkeyurls = [
@@ -699,9 +694,9 @@ def prepareCore(coin, version_data, settings, data_dir, extra_opts={}):
     if coin == 'firo':
         pubkeyurls.append('https://firo.org/reuben.asc')
     if coin == 'digiwage':
-        pubkeyurls.append('https://raw.githubusercontent.com/digiwage/digiwage/master/digiwage.asc')
+        pubkeyurls.append('https://raw.githubusercontent.com/digiwage/basicswap/master/pgp/keys/digiwage_digiwage.pgp')
 
-    if coin in ('monero', 'firo','digiwage'):
+    if coin in ('monero', 'firo'):
         with open(assert_path, 'rb') as fp:
             verified = gpg.verify_file(fp)
 
@@ -723,6 +718,7 @@ def prepareCore(coin, version_data, settings, data_dir, extra_opts={}):
     ensureValidSignatureBy(verified, signing_key_name)
 
     extractCore(coin, version_data, settings, bin_dir, release_path, extra_opts)
+
 
 def writeTorSettings(fp, coin, coin_settings, tor_control_password):
     onionport = coin_settings['onionport']
@@ -764,8 +760,7 @@ def prepareDataDir(coin, settings, chain, particl_mnemonic, extra_opts={}):
             if chain == 'testnet':
                 fp.write('testnet=1\n')
             config_datadir = data_dir
-            if core_settings['manage_daemon'] is False:
-                # Assume conf file is for isolated coin docker setup
+            if extra_opts.get('use_containers', False) is True:
                 config_datadir = '/data'
             fp.write(f'data-dir={config_datadir}\n')
             fp.write('rpc-bind-port={}\n'.format(core_settings['rpcport']))
@@ -790,16 +785,14 @@ def prepareDataDir(coin, settings, chain, particl_mnemonic, extra_opts={}):
         if os.path.exists(wallet_conf_path):
             exitWithError('{} exists'.format(wallet_conf_path))
         with open(wallet_conf_path, 'w') as fp:
+            config_datadir = os.path.join(data_dir, 'wallets')
             if extra_opts.get('use_containers', False) is True:
                 fp.write('daemon-address={}:{}\n'.format(core_settings['rpchost'], core_settings['rpcport']))
+                config_datadir = '/data'
             fp.write('untrusted-daemon=1\n')
             fp.write('no-dns=1\n')
             fp.write('rpc-bind-port={}\n'.format(core_settings['walletrpcport']))
             fp.write('rpc-bind-ip={}\n'.format(COINS_RPCBIND_IP))
-            config_datadir = os.path.join(data_dir, 'wallets')
-            if core_settings['manage_wallet_daemon'] is False:
-                # Assume conf file is for isolated coin docker setup
-                config_datadir = '/data'
             fp.write(f'wallet-dir={config_datadir}\n')
             fp.write('log-file={}\n'.format(os.path.join(config_datadir, 'wallet.log')))
             fp.write('shared-ringdb-dir={}\n'.format(os.path.join(config_datadir, 'shared-ringdb')))
@@ -865,7 +858,7 @@ def prepareDataDir(coin, settings, chain, particl_mnemonic, extra_opts={}):
             params_dir = os.path.join(data_dir, 'pivx-params')
             downloadPIVXParams(params_dir)
             fp.write('prune=4000\n')
-            PIVX_PARAMSDIR = os.getenv('PIVX_PARAMSDIR', params_dir)
+            PIVX_PARAMSDIR = os.getenv('PIVX_PARAMSDIR', '/data/pivx-params' if extra_opts.get('use_containers', False) else params_dir)
             fp.write(f'paramsdir={PIVX_PARAMSDIR}\n')
             if PIVX_RPC_USER != '':
                 fp.write('rpcauth={}:{}${}\n'.format(PIVX_RPC_USER, salt, password_to_hmac(salt, PIVX_RPC_PWD)))
@@ -1120,7 +1113,7 @@ def initialise_wallets(particl_wallet_mnemonic, with_coins, data_dir, settings, 
         try:
             swap_client = BasicSwap(fp, data_dir, settings, chain)
 
-            coins_to_create_wallets_for = (Coins.PART, Coins.BTC, Coins.LTC, Coins.PIVX)
+            coins_to_create_wallets_for = (Coins.PART, Coins.BTC, Coins.LTC, Coins.WAGE)
             # Always start Particl, it must be running to initialise a wallet in addcoin mode
             # Particl must be loaded first as subsequent coins are initialised from the Particl mnemonic
             start_daemons = ['particl', ] + [c for c in with_coins if c != 'particl']
@@ -1180,7 +1173,10 @@ def initialise_wallets(particl_wallet_mnemonic, with_coins, data_dir, settings, 
                 swap_client.waitForDaemonRPC(c)
                 swap_client.initialiseWallet(c)
                 if WALLET_ENCRYPTION_PWD != '' and c not in coins_to_create_wallets_for:
-                    swap_client.ci(c).changeWalletPassword('', WALLET_ENCRYPTION_PWD)
+                    try:
+                        swap_client.ci(c).changeWalletPassword('', WALLET_ENCRYPTION_PWD)
+                    except Exception as e:
+                        logger.warning(f'changeWalletPassword failed for {coin_name}.')
 
         finally:
             if swap_client:
@@ -1207,12 +1203,14 @@ def signal_handler(sig, frame):
 
 
 def check_btc_fastsync_data(base_dir, sync_file_path):
+    github_pgp_url = 'https://raw.githubusercontent.com/tecnovert/basicswap/master/pgp'
+    gitlab_pgp_url = 'https://gitlab.com/particl/basicswap/-/raw/master/pgp'
     asc_filename = BITCOIN_FASTSYNC_FILE + '.asc'
     asc_file_path = os.path.join(base_dir, asc_filename)
     if not os.path.exists(asc_file_path):
         asc_file_urls = (
-            'https://raw.githubusercontent.com/tecnovert/basicswap/master/pgp/sigs/' + asc_filename,
-            'https://gitlab.com/particl/basicswap/-/raw/master/pgp/sigs/' + asc_filename,
+            github_pgp_url + '/sigs/' + asc_filename,
+            gitlab_pgp_url + '/sigs/' + asc_filename,
         )
         for url in asc_file_urls:
             try:
@@ -1221,6 +1219,13 @@ def check_btc_fastsync_data(base_dir, sync_file_path):
             except Exception as e:
                 logging.warning('Download failed: %s', str(e))
     gpg = gnupg.GPG()
+    pubkey_filename = '{}_{}.pgp'.format('particl', 'tecnovert')
+    pubkeyurls = [
+        github_pgp_url + '/keys/' + pubkey_filename,
+        gitlab_pgp_url + '/keys/' + pubkey_filename,
+    ]
+    if not havePubkey(gpg, expected_key_ids['tecnovert'][0]):
+        importPubkeyFromUrls(gpg, pubkeyurls)
     with open(asc_file_path, 'rb') as fp:
         verified = gpg.verify_file(fp, sync_file_path)
 

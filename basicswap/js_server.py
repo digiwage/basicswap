@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2020-2022 tecnovert
+# Copyright (c) 2020-2023 tecnovert
 # Distributed under the MIT software license, see the accompanying
 # file LICENSE or http://www.opensource.org/licenses/mit-license.php.
 
@@ -49,11 +49,6 @@ def getFormData(post_string, is_json):
     return form_data
 
 
-def js_error(self, error_str):
-    error_str_json = json.dumps({'error': error_str})
-    return bytes(error_str_json, 'UTF-8')
-
-
 def withdraw_coin(swap_client, coin_type, post_string, is_json):
     post_data = getFormData(post_string, is_json)
 
@@ -73,17 +68,24 @@ def withdraw_coin(swap_client, coin_type, post_string, is_json):
     return {'txid': txid_hex}
 
 
-def js_coins(self, url_split, post_string, is_json):
+def js_error(self, error_str) -> bytes:
+    error_str_json = json.dumps({'error': error_str})
+    return bytes(error_str_json, 'UTF-8')
+
+
+def js_coins(self, url_split, post_string, is_json) -> bytes:
     swap_client = self.server.swap_client
 
     coins = []
     for coin in Coins:
         cc = swap_client.coin_clients[coin]
+        coin_chainparams = chainparams[cc['coin']]
         entry = {
             'id': int(coin),
-            'ticker': chainparams[cc['coin']]['ticker'],
+            'ticker': coin_chainparams['ticker'],
             'name': getCoinName(coin),
             'active': False if cc['connection_type'] == 'none' else True,
+            'decimal_places': coin_chainparams['decimal_places'],
         }
         if coin == Coins.PART_ANON:
             entry['variant'] = 'Anon'
@@ -124,7 +126,7 @@ def js_wallets(self, url_split, post_string, is_json):
     return bytes(json.dumps(swap_client.getWalletsInfo({'ticker_key': True})), 'UTF-8')
 
 
-def js_offers(self, url_split, post_string, is_json, sent=False):
+def js_offers(self, url_split, post_string, is_json, sent=False) -> bytes:
     swap_client = self.server.swap_client
     swap_client.checkSystemStatus()
     offer_id = None
@@ -162,11 +164,15 @@ def js_offers(self, url_split, post_string, is_json, sent=False):
             assert (sort_dir in ['asc', 'desc']), 'Invalid sort dir'
             filters['sort_dir'] = sort_dir
 
-        if b'offset' in post_data:
+        if have_data_entry(post_data, 'offset'):
             filters['offset'] = int(get_data_entry(post_data, 'offset'))
-        if b'limit' in post_data:
+        if have_data_entry(post_data, 'limit'):
             filters['limit'] = int(get_data_entry(post_data, 'limit'))
             assert (filters['limit'] > 0 and filters['limit'] <= PAGE_LIMIT), 'Invalid limit'
+        if have_data_entry(post_data, 'active'):
+            filters['active'] = get_data_entry(post_data, 'active')
+        if have_data_entry(post_data, 'include_sent'):
+            filters['include_sent'] = toBool(get_data_entry(post_data, 'include_sent'))
 
     offers = swap_client.listOffers(sent, filters)
     rv = []
@@ -174,6 +180,7 @@ def js_offers(self, url_split, post_string, is_json, sent=False):
         ci_from = swap_client.ci(o.coin_from)
         ci_to = swap_client.ci(o.coin_to)
         rv.append({
+            'swap_type': o.swap_type,
             'addr_from': o.addr_from,
             'addr_to': o.addr_to,
             'offer_id': o.offer_id.hex(),
@@ -189,11 +196,11 @@ def js_offers(self, url_split, post_string, is_json, sent=False):
     return bytes(json.dumps(rv), 'UTF-8')
 
 
-def js_sentoffers(self, url_split, post_string, is_json):
-    return self.js_offers(url_split, post_string, is_json, True)
+def js_sentoffers(self, url_split, post_string, is_json) -> bytes:
+    return js_offers(self, url_split, post_string, is_json, True)
 
 
-def js_bids(self, url_split, post_string, is_json):
+def js_bids(self, url_split, post_string, is_json) -> bytes:
     swap_client = self.server.swap_client
     swap_client.checkSystemStatus()
     if len(url_split) > 3:
@@ -286,19 +293,19 @@ def js_bids(self, url_split, post_string, is_json):
     } for b in bids]), 'UTF-8')
 
 
-def js_sentbids(self, url_split, post_string, is_json):
+def js_sentbids(self, url_split, post_string, is_json) -> bytes:
     swap_client = self.server.swap_client
     swap_client.checkSystemStatus()
     return bytes(json.dumps(swap_client.listBids(sent=True)), 'UTF-8')
 
 
-def js_network(self, url_split, post_string, is_json):
+def js_network(self, url_split, post_string, is_json) -> bytes:
     swap_client = self.server.swap_client
     swap_client.checkSystemStatus()
     return bytes(json.dumps(swap_client.get_network_info()), 'UTF-8')
 
 
-def js_revokeoffer(self, url_split, post_string, is_json):
+def js_revokeoffer(self, url_split, post_string, is_json) -> bytes:
     swap_client = self.server.swap_client
     swap_client.checkSystemStatus()
     offer_id = bytes.fromhex(url_split[3])
@@ -307,7 +314,7 @@ def js_revokeoffer(self, url_split, post_string, is_json):
     return bytes(json.dumps({'revoked_offer': offer_id.hex()}), 'UTF-8')
 
 
-def js_smsgaddresses(self, url_split, post_string, is_json):
+def js_smsgaddresses(self, url_split, post_string, is_json) -> bytes:
     swap_client = self.server.swap_client
     swap_client.checkSystemStatus()
     if len(url_split) > 3:
@@ -331,7 +338,7 @@ def js_smsgaddresses(self, url_split, post_string, is_json):
     return bytes(json.dumps(swap_client.listAllSMSGAddresses()), 'UTF-8')
 
 
-def js_rates(self, url_split, post_string, is_json):
+def js_rates(self, url_split, post_string, is_json) -> bytes:
     post_data = getFormData(post_string, is_json)
 
     sc = self.server.swap_client
@@ -340,7 +347,7 @@ def js_rates(self, url_split, post_string, is_json):
     return bytes(json.dumps(sc.lookupRates(coin_from, coin_to)), 'UTF-8')
 
 
-def js_rates_list(self, url_split, query_string, is_json):
+def js_rates_list(self, url_split, query_string, is_json) -> bytes:
     get_data = urllib.parse.parse_qs(query_string)
 
     sc = self.server.swap_client
@@ -349,7 +356,7 @@ def js_rates_list(self, url_split, query_string, is_json):
     return bytes(json.dumps(sc.lookupRates(coin_from, coin_to, True)), 'UTF-8')
 
 
-def js_rate(self, url_split, post_string, is_json):
+def js_rate(self, url_split, post_string, is_json) -> bytes:
     post_data = getFormData(post_string, is_json)
 
     sc = self.server.swap_client
@@ -382,13 +389,13 @@ def js_rate(self, url_split, post_string, is_json):
     return bytes(json.dumps({'rate': rate}), 'UTF-8')
 
 
-def js_index(self, url_split, post_string, is_json):
+def js_index(self, url_split, post_string, is_json) -> bytes:
     swap_client = self.server.swap_client
     swap_client.checkSystemStatus()
     return bytes(json.dumps(swap_client.getSummary()), 'UTF-8')
 
 
-def js_generatenotification(self, url_split, post_string, is_json):
+def js_generatenotification(self, url_split, post_string, is_json) -> bytes:
     swap_client = self.server.swap_client
 
     if not swap_client.debug:
@@ -407,7 +414,7 @@ def js_generatenotification(self, url_split, post_string, is_json):
     return bytes(json.dumps({'type': r}), 'UTF-8')
 
 
-def js_notifications(self, url_split, post_string, is_json):
+def js_notifications(self, url_split, post_string, is_json) -> bytes:
     swap_client = self.server.swap_client
     swap_client.checkSystemStatus()
     swap_client.getNotifications()
@@ -415,7 +422,7 @@ def js_notifications(self, url_split, post_string, is_json):
     return bytes(json.dumps(swap_client.getNotifications()), 'UTF-8')
 
 
-def js_vacuumdb(self, url_split, post_string, is_json):
+def js_vacuumdb(self, url_split, post_string, is_json) -> bytes:
     swap_client = self.server.swap_client
     swap_client.checkSystemStatus()
     swap_client.vacuumDB()
@@ -423,7 +430,7 @@ def js_vacuumdb(self, url_split, post_string, is_json):
     return bytes(json.dumps({'completed': True}), 'UTF-8')
 
 
-def js_getcoinseed(self, url_split, post_string, is_json):
+def js_getcoinseed(self, url_split, post_string, is_json) -> bytes:
     swap_client = self.server.swap_client
     swap_client.checkSystemStatus()
     post_data = getFormData(post_string, is_json)
@@ -439,7 +446,7 @@ def js_getcoinseed(self, url_split, post_string, is_json):
     return bytes(json.dumps({'coin': ci.ticker(), 'seed': seed.hex()}), 'UTF-8')
 
 
-def js_setpassword(self, url_split, post_string, is_json):
+def js_setpassword(self, url_split, post_string, is_json) -> bytes:
     # Set or change wallet passwords
     # Only works with currently enabled coins
     # Will fail if any coin does not unlock on the old password
@@ -462,7 +469,7 @@ def js_setpassword(self, url_split, post_string, is_json):
     return bytes(json.dumps({'success': True}), 'UTF-8')
 
 
-def js_unlock(self, url_split, post_string, is_json):
+def js_unlock(self, url_split, post_string, is_json) -> bytes:
     swap_client = self.server.swap_client
     post_data = getFormData(post_string, is_json)
 
@@ -479,7 +486,7 @@ def js_unlock(self, url_split, post_string, is_json):
     return bytes(json.dumps({'success': True}), 'UTF-8')
 
 
-def js_lock(self, url_split, post_string, is_json):
+def js_lock(self, url_split, post_string, is_json) -> bytes:
     swap_client = self.server.swap_client
     post_data = {} if post_string == '' else getFormData(post_string, is_json)
 
@@ -494,11 +501,11 @@ def js_lock(self, url_split, post_string, is_json):
     return bytes(json.dumps({'success': True}), 'UTF-8')
 
 
-def js_404(self, url_split, post_string, is_json):
+def js_404(self, url_split, post_string, is_json) -> bytes:
     return bytes(json.dumps({'Error': 'path unknown'}), 'UTF-8')
 
 
-def js_help(self, url_split, post_string, is_json):
+def js_help(self, url_split, post_string, is_json) -> bytes:
     # TODO: Add details and examples
     commands = []
     for k in pages:
