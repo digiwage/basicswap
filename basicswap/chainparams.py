@@ -367,7 +367,6 @@ chainparams = {
         }
     }
 }
-}
 ticker_map = {}
 
 
