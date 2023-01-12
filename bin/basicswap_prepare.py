@@ -628,7 +628,7 @@ def prepareCore(coin, version_data, settings, data_dir, extra_opts={}):
         elif coin == 'digiwage':
             release_filename = '{}-{}-{}.{}'.format(coin, version, BIN_ARCH, FILE_EXT)
             release_url = 'https://github.com/digiwage/digiwage/releases/download/v{}/{}'.format(version + version_tag, release_filename)
-            assert_filename = '{}-{}-{}-build.assert'.format(coin, os_name, version.rsplit('.', 1)[0])
+            assert_filename = '{}-{}-{}-build.assert'.format(coin, os_name, version)
             assert_url = 'https://raw.githubusercontent.com/digiwage/gitian.sigs/digiwage/2.0.1-{}/digiwage/{}'.format(os_dir_name, assert_filename)
         else:
             raise ValueError('Unknown coin')
