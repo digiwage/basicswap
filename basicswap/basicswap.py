@@ -39,6 +39,7 @@ from .interface.xmr import XMRInterface
 from .interface.pivx import PIVXInterface
 from .interface.dash import DASHInterface
 from .interface.firo import FIROInterface
+from .interface.wage import WAGEInterface
 from .interface.passthrough_btc import PassthroughBTCInterface
 
 from . import __version__
