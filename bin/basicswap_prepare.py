@@ -1113,7 +1113,7 @@ def initialise_wallets(particl_wallet_mnemonic, with_coins, data_dir, settings, 
         try:
             swap_client = BasicSwap(fp, data_dir, settings, chain)
 
-            coins_to_create_wallets_for = (Coins.PART, Coins.BTC, Coins.LTC, Coins.WAGE)
+            coins_to_create_wallets_for = (Coins.PART, Coins.BTC, Coins.LTC)
             # Always start Particl, it must be running to initialise a wallet in addcoin mode
             # Particl must be loaded first as subsequent coins are initialised from the Particl mnemonic
             start_daemons = ['particl', ] + [c for c in with_coins if c != 'particl']
