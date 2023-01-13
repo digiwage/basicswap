@@ -876,7 +876,7 @@ def prepareDataDir(coin, settings, chain, particl_mnemonic, extra_opts={}):
                 fp.write('rpcauth={}:{}${}\n'.format(FIRO_RPC_USER, salt, password_to_hmac(salt, FIRO_RPC_PWD)))
         elif coin == 'digiwage':
             if WAGE_RPC_USER != '':
-                fp.write('rpcauth={}:{}${}\n'.format(WAGE_RPC_USER, salt, password_to_hmac(salt, WAGE_RPC_PWD)))
+                fp.write('rpcuser={}:{}${}\n'.format(WAGE_RPC_USER, salt, password_to_hmac(salt, WAGE_RPC_PWD)))
         else:
             logger.warning('Unknown coin %s', coin)
 
