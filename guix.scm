@@ -69,7 +69,7 @@
        (method git-fetch)
        (uri
         (git-reference
-         (url "https://github.com/digiwage/coincurve")
+         (url "https://github.com/tecnovert/coincurve")
          (commit version)))
        (file-name
         (git-file-name name version))
@@ -100,7 +100,7 @@
       ))
     (synopsis "Python libsecp256k1 wrapper")
     (description "Python libsecp256k1 wrapper.")
-    (home-page "https://github.com/digiwage/coincurve")
+    (home-page "https://github.com/tecnovert/coincurve")
     (license license:bsd-3)))
 
 (define python-sqlalchemy-1.4.39
@@ -121,7 +121,7 @@
   (source (origin
     (method git-fetch)
     (uri (git-reference
-      (url "https://github.com/digiwage/basicswap")
+      (url "https://github.com/tecnovert/basicswap")
       (commit "9729dcf526917eb5e128dd72b091464d1e72fe54")))
     (sha256
       (base32
@@ -164,5 +164,5 @@
     ))
   (synopsis "Simple Atomic Swap Network - Proof of Concept")
   (description #f)
-  (home-page "https://github.com/digiwage/basicswap")
+  (home-page "https://github.com/tecnovert/basicswap")
   (license license:bsd-3)))
