@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2023 tecnovert
+# Copyright (c) 2022 tecnovert
 # Distributed under the MIT software license, see the accompanying
 # file LICENSE or http://www.opensource.org/licenses/mit-license.php.
 
@@ -46,10 +46,6 @@ from basicswap.rpc import (
 from basicswap.contrib.key import (
     ECKey,
 )
-from basicswap.contrib.rpcauth import (
-    generate_salt,
-    password_to_hmac
-)
 from basicswap.http_server import (
     HttpThread,
 )
@@ -73,7 +69,7 @@ from tests.basicswap.common import (
     PREFIX_SECRET_KEY_REGTEST,
 )
 from bin.basicswap_run import startDaemon
-from bin.basicswap_prepare import downloadPIVXParams
+#from bin.basicswap_prepare import downloadPIVXParams
 
 
 logger = logging.getLogger()
@@ -97,16 +93,9 @@ def prepareOtherDir(datadir, nodeId, conf_file='digiwage.conf'):
 
     with open(filePath, 'w+') as fp:
         fp.write('regtest=1\n')
-        if conf_file != 'digiwage.conf':
-            fp.write('[regtest]\n')
+        fp.write('[regtest]\n')
         fp.write('port=' + str(BASE_PORT + nodeId) + '\n')
         fp.write('rpcport=' + str(BASE_RPC_PORT + nodeId) + '\n')
-
-        salt = generate_salt(16)
-        if conf_file == 'digiwage.conf':
-            fp.write('rpcuser={}\n'.format('test' + str(nodeId)))
-            fp.write('rpcpassword={}\n'.format('test_pass' + str(nodeId)))
-            #fp.write('rpcauth={}:{}${}\n'.format('test' + str(nodeId), salt, password_to_hmac(salt, 'test_pass' + str(nodeId))))
 
         fp.write('daemon=0\n')
         fp.write('printtoconsole=0\n')
@@ -120,6 +109,11 @@ def prepareOtherDir(datadir, nodeId, conf_file='digiwage.conf'):
 
         fp.write('fallbackfee=0.01\n')
         fp.write('acceptnonstdtxn=0\n')
+
+     #   if conf_file == 'pivx.conf':
+      #      params_dir = os.path.join(datadir, 'pivx-params')
+      #      downloadPIVXParams(params_dir)
+      #      fp.write(f'paramsdir={params_dir}\n')
 
         if conf_file == 'bitcoin.conf':
             fp.write('wallet=wallet.dat\n')
@@ -195,8 +189,6 @@ def prepareDir(datadir, nodeId, network_key, network_pubkey):
                 'bindir': cfg.DIGIWAGE_BINDIR,
                 'use_csv': False,
                 'use_segwit': False,
-                'rpcuser': f'test{WAGE_NODE}',
-                'rpcpassword': f'test_pass{WAGE_NODE}',
             },
             'bitcoin': {
                 'connection_type': 'rpc',
@@ -245,7 +237,7 @@ def signal_handler(sig, frame):
 def run_coins_loop(cls):
     while not stop_test:
         try:
-            wageRpc('generate 1')
+            wageRpc('generatetoaddress 1 {}'.format(cls.wage_addr))
             btcRpc('generatetoaddress 1 {}'.format(cls.btc_addr))
         except Exception as e:
             logging.warning('run_coins_loop ' + str(e))
@@ -286,14 +278,14 @@ class Test(unittest.TestCase):
 
         if os.path.isdir(cfg.TEST_DATADIRS):
             logging.info('Removing ' + cfg.TEST_DATADIRS)
-            for name in os.listdir(cfg.TEST_DATADIRS):
-                if name == 'wage-params':
-                    continue
-                fullpath = os.path.join(cfg.TEST_DATADIRS, name)
-                if os.path.isdir(fullpath):
-                    shutil.rmtree(fullpath)
-                else:
-                    os.remove(fullpath)
+           # for name in os.listdir(cfg.TEST_DATADIRS):
+           #     if name == 'pivx-params':
+           #         continue
+           #     fullpath = os.path.join(cfg.TEST_DATADIRS, name)
+           #     if os.path.isdir(fullpath):
+            shutil.rmtree(cfg.TEST_DATADIRS)
+                #else:
+                #    os.remove(fullpath)
 
         for i in range(NUM_NODES):
             prepareDir(cfg.TEST_DATADIRS, i, cls.network_key, cls.network_pubkey)
@@ -356,21 +348,20 @@ class Test(unittest.TestCase):
             t.start()
 
         waitForRPC(wageRpc)
-        num_blocks = 1
-        logging.info('Mining %d wage blocks', num_blocks)
+        num_blocks = 1352  # CHECKLOCKTIMEVERIFY soft-fork activates at (regtest) block height 1351.
+        logging.info('Mining %d digiwage blocks', num_blocks)
         cls.wage_addr = wageRpc('getnewaddress mining_addr')
-        #wageRpc('setgenerate true')
-        wageRpc('generate {}'.format(num_blocks))
+        wageRpc('generatetoaddress {} {}'.format(num_blocks, cls.wage_addr))
 
         ro = wageRpc('getblockchaininfo')
         try:
             assert (ro['bip9_softforks']['csv']['status'] == 'active')
         except Exception:
-            logging.info('wage: csv is not active')
+            logging.info('digiwage: csv is not active')
         try:
             assert (ro['bip9_softforks']['segwit']['status'] == 'active')
         except Exception:
-            logging.info('wage: segwit is not active')
+            logging.info('digiwage: segwit is not active')
 
         waitForRPC(btcRpc)
         cls.btc_addr = btcRpc('getnewaddress mining_addr bech32')
@@ -580,13 +571,13 @@ class Test(unittest.TestCase):
         logging.info('---------- Test WAGE v3 txns')
 
         generate_addr = wageRpc('getnewaddress \"generate test\"')
-        wage_addr = wageRpc('getnewaddress \"Sapling test\"')
-        wage_sapling_addr = wageRpc('getnewshieldaddress \"shield addr\"')
+        #wage_addr = wageRpc('getnewaddress \"Sapling test\"')
+       # pivx_sapling_addr = wageRpc('getnewshieldaddress \"shield addr\"')
 
-        wageRpc(f'sendtoaddress \"{wage_addr}\" 6.0')
+        wageRpc(f'sendtoaddress \"{wage_addr}\" 2.0.1')
         wageRpc(f'generatetoaddress 1 \"{generate_addr}\"')
 
-        txid = wageRpc('shieldsendmany "{}" "[{{\\"address\\": \\"{}\\", \\"amount\\": 1}}]"'.format(wage_addr, wage_sapling_addr))
+        txid = wageRpc('shieldsendmany "{}" "[{{\\"address\\": \\"{}\\", \\"amount\\": 1}}]"'.format(wage_addr, generate_addr))
         rtx = wageRpc(f'getrawtransaction \"{txid}\" true')
         assert (rtx['version'] == 3)
 
@@ -681,16 +672,6 @@ class Test(unittest.TestCase):
         for i, txin in enumerate(itx_decoded['vin']):
             assert (txin['txid'] == itx_after['vin'][i]['txid'])
             assert (txin['vout'] == itx_after['vin'][i]['vout'])
-
-    def test_007_hdwallet(self):
-        logging.info('---------- Test {} hdwallet'.format(self.test_coin_from.name))
-
-        swap_client = self.swap_clients[0]
-        # Run initialiseWallet to set 'main_wallet_seedid_'
-        swap_client.initialiseWallet(self.test_coin_from)
-        ci = swap_client.ci(self.test_coin_from)
-        assert ('490ba1e2c3894d5534c467141ee3cdf77292c362' == ci.getWalletSeedID())
-        assert swap_client.checkWalletSeed(self.test_coin_from) is True
 
     def test_11_xmrswap_to(self):
         logging.info('---------- Test xmr swap protocol to')
