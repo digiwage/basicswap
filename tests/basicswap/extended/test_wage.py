@@ -180,7 +180,7 @@ def prepareDir(datadir, nodeId, network_key, network_pubkey):
                 'manage_daemon': False,
                 'rpcport': BASE_RPC_PORT + WAGE_NODE,
                 'datadir': wagedatadir,
-                'bindir': cfg.WAGE_BINDIR,
+                'bindir': cfg.DIGIWAGE_BINDIR,
                 'use_csv': True,
                 'use_segwit': False,
             },
@@ -292,7 +292,7 @@ class Test(unittest.TestCase):
                 callrpc_cli(cfg.BITCOIN_BINDIR, btc_data_dir, 'regtest', '-wallet=wallet.dat create', 'bitcoin-wallet')
         cls.daemons.append(startDaemon(btc_data_dir, cfg.BITCOIN_BINDIR, cfg.BITCOIND))
         logging.info('Started %s %d', cfg.BITCOIND, cls.daemons[-1].pid)
-        cls.daemons.append(startDaemon(os.path.join(cfg.TEST_DATADIRS, str(WAGE_NODE)), cfg.WAGE_BINDIR, cfg.WAGED))
+        cls.daemons.append(startDaemon(os.path.join(cfg.TEST_DATADIRS, str(WAGE_NODE)), cfg.DIGIWAGE_BINDIR, cfg.WAGED))
         logging.info('Started %s %d', cfg.WAGED, cls.daemons[-1].pid)
 
         for i in range(NUM_NODES):
