@@ -285,7 +285,7 @@ class Test(unittest.TestCase):
 
         if os.path.isdir(cfg.TEST_DATADIRS):
             logging.info('Removing ' + cfg.TEST_DATADIRS)
-            shutil.rmtree(fg.TEST_DATADIRS)
+            shutil.rmtree(cfg.TEST_DATADIRS)
 
         for i in range(NUM_NODES):
             prepareDir(cfg.TEST_DATADIRS, i, cls.network_key, cls.network_pubkey)
