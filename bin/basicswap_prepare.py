@@ -167,8 +167,8 @@ FIRO_RPC_PWD = os.getenv('FIRO_RPC_PWD', '')
 WAGE_RPC_HOST = os.getenv('WAGE_RPC_HOST', '127.0.0.1')
 WAGE_RPC_PORT = int(os.getenv('WAGE_RPC_PORT', 46002))
 WAGE_ONION_PORT = int(os.getenv('WAGE_ONION_PORT', 46003))  # nDefaultPort
-WAGE_RPC_USER = os.getenv('WAGE_RPC_USER', '')
-WAGE_RPC_PWD = os.getenv('WAGE_RPC_PWD', '')
+WAGE_RPC_USER = os.getenv('WAGE_RPC_USER', 'rpcuser')
+WAGE_RPC_PWD = os.getenv('WAGE_RPC_PWD', 'rpcpassword')
 
 TOR_PROXY_HOST = os.getenv('TOR_PROXY_HOST', '127.0.0.1')
 TOR_PROXY_PORT = int(os.getenv('TOR_PROXY_PORT', 9050))
