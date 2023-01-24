@@ -278,14 +278,14 @@ class Test(unittest.TestCase):
 
         if os.path.isdir(cfg.TEST_DATADIRS):
             logging.info('Removing ' + cfg.TEST_DATADIRS)
-            for name in os.listdir(cfg.TEST_DATADIRS):
-                if name == 'pivx-params':
-                    continue
-                fullpath = os.path.join(cfg.TEST_DATADIRS, name)
-                if os.path.isdir(fullpath):
-                    shutil.rmtree(fullpath)
-                else:
-                    os.remove(fullpath)
+           # for name in os.listdir(cfg.TEST_DATADIRS):
+           #     if name == 'pivx-params':
+           #         continue
+           #     fullpath = os.path.join(cfg.TEST_DATADIRS, name)
+           #     if os.path.isdir(fullpath):
+            shutil.rmtree(cfg.TEST_DATADIRS)
+                #else:
+                #    os.remove(fullpath)
 
         for i in range(NUM_NODES):
             prepareDir(cfg.TEST_DATADIRS, i, cls.network_key, cls.network_pubkey)
