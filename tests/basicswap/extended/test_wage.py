@@ -292,8 +292,8 @@ class Test(unittest.TestCase):
                 callrpc_cli(cfg.BITCOIN_BINDIR, btc_data_dir, 'regtest', '-wallet=wallet.dat create', 'bitcoin-wallet')
         cls.daemons.append(startDaemon(btc_data_dir, cfg.BITCOIN_BINDIR, cfg.BITCOIND))
         logging.info('Started %s %d', cfg.BITCOIND, cls.daemons[-1].pid)
-        cls.daemons.append(startDaemon(os.path.join(cfg.TEST_DATADIRS, str(WAGE_NODE)), cfg.DIGIWAGE_BINDIR, cfg.WAGED))
-        logging.info('Started %s %d', cfg.WAGED, cls.daemons[-1].pid)
+        cls.daemons.append(startDaemon(os.path.join(cfg.TEST_DATADIRS, str(WAGE_NODE)), cfg.DIGIWAGE_BINDIR, cfg.DIGIWAGED))
+        logging.info('Started %s %d', cfg.DIGIWAGED, cls.daemons[-1].pid)
 
         for i in range(NUM_NODES):
             data_dir = os.path.join(cfg.TEST_DATADIRS, str(i))
