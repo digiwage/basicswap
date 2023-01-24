@@ -73,7 +73,6 @@ from tests.basicswap.common import (
     PREFIX_SECRET_KEY_REGTEST,
 )
 from bin.basicswap_run import startDaemon
-from bin.basicswap_prepare import downloadPIVXParams
 
 
 logger = logging.getLogger()
@@ -286,9 +285,6 @@ class Test(unittest.TestCase):
 
         if os.path.isdir(cfg.TEST_DATADIRS):
             logging.info('Removing ' + cfg.TEST_DATADIRS)
-            for name in os.listdir(cfg.TEST_DATADIRS):
-                if name == 'wage-params':
-                    continue
                 fullpath = os.path.join(cfg.TEST_DATADIRS, name)
                 if os.path.isdir(fullpath):
                     shutil.rmtree(fullpath)
@@ -583,7 +579,7 @@ class Test(unittest.TestCase):
         wage_addr = wageRpc('getnewaddress \"Sapling test\"')
         wage_sapling_addr = wageRpc('getnewshieldaddress \"shield addr\"')
 
-        wageRpc(f'sendtoaddress \"{wage_addr}\" 6.0')
+        wageRpc(f'sendtoaddress \"{wage_addr}\" 2.0.1')
         wageRpc(f'generatetoaddress 1 \"{generate_addr}\"')
 
         txid = wageRpc('shieldsendmany "{}" "[{{\\"address\\": \\"{}\\", \\"amount\\": 1}}]"'.format(wage_addr, wage_sapling_addr))
