@@ -612,9 +612,9 @@ class BasicSwap(BaseApp):
                     # Workaround for mismatched pid file name in litecoin 0.21.2
                     # Also set with pid= in .conf
                     # TODO: Remove
-                    if cc['name'] == 'litecoin' and (not os.path.exists(pidfilepath)) and \
-                       os.path.exists(os.path.join(self.getChainDatadirPath(coin), 'bitcoind.pid')):
-                       pidfilepath = os.path.join(self.getChainDatadirPath(coin), 'bitcoind.pid')
+                  #  if cc['name'] == 'litecoin' and (not os.path.exists(pidfilepath)) and \
+                  #     os.path.exists(os.path.join(self.getChainDatadirPath(coin), 'bitcoind.pid')):
+                  #      pidfilepath = os.path.join(self.getChainDatadirPath(coin), 'bitcoind.pid')
 
                     with open(pidfilepath, 'rb') as fp:
                         datadir_pid = int(fp.read().decode('utf-8'))
