@@ -25,9 +25,9 @@ import basicswap.config as cfg
 from basicswap.basicswap import (
     BasicSwap,
     Coins,
-    TxStates,
     SwapTypes,
     BidStates,
+    TxStates,
     DebugTypes,
 )
 from basicswap.util import (
@@ -55,12 +55,12 @@ from tests.basicswap.util import (
 from tests.basicswap.common import (
     checkForks,
     stopDaemons,
-    wait_for_offer,
     wait_for_bid,
+    wait_for_offer,
     wait_for_balance,
     wait_for_unspent,
-    wait_for_bid_tx_state,
     wait_for_in_progress,
+    wait_for_bid_tx_state,
     TEST_HTTP_HOST,
     TEST_HTTP_PORT,
     BASE_PORT,
@@ -69,6 +69,7 @@ from tests.basicswap.common import (
     PREFIX_SECRET_KEY_REGTEST,
 )
 from bin.basicswap_run import startDaemon
+#from bin.basicswap_prepare import downloadPIVXParams
 
 
 logger = logging.getLogger()
@@ -108,6 +109,11 @@ def prepareOtherDir(datadir, nodeId, conf_file='digiwage.conf'):
 
         fp.write('fallbackfee=0.01\n')
         fp.write('acceptnonstdtxn=0\n')
+
+     #   if conf_file == 'pivx.conf':
+      #      params_dir = os.path.join(datadir, 'pivx-params')
+      #      downloadPIVXParams(params_dir)
+      #      fp.write(f'paramsdir={params_dir}\n')
 
         if conf_file == 'bitcoin.conf':
             fp.write('wallet=wallet.dat\n')
@@ -181,7 +187,7 @@ def prepareDir(datadir, nodeId, network_key, network_pubkey):
                 'rpcport': BASE_RPC_PORT + WAGE_NODE,
                 'datadir': wagedatadir,
                 'bindir': cfg.DIGIWAGE_BINDIR,
-                'use_csv': True,
+                'use_csv': False,
                 'use_segwit': False,
             },
             'bitcoin': {
@@ -217,8 +223,8 @@ def btcRpc(cmd):
     return callrpc_cli(cfg.BITCOIN_BINDIR, os.path.join(cfg.TEST_DATADIRS, str(BTC_NODE)), 'regtest', cmd, cfg.BITCOIN_CLI)
 
 
-def wageRpc(cmd, wallet=None):
-    return callrpc_cli(cfg.DIGIWAGE_BINDIR, os.path.join(cfg.TEST_DATADIRS, str(WAGE_NODE)), 'regtest', cmd, cfg.WAGE_CLI, wallet=wallet)
+def wageRpc(cmd):
+    return callrpc_cli(cfg.DIGIWAGE_BINDIR, os.path.join(cfg.TEST_DATADIRS, str(WAGE_NODE)), 'regtest', cmd, cfg.DIGIWAGE_CLI)
 
 
 def signal_handler(sig, frame):
@@ -272,7 +278,14 @@ class Test(unittest.TestCase):
 
         if os.path.isdir(cfg.TEST_DATADIRS):
             logging.info('Removing ' + cfg.TEST_DATADIRS)
-            shutil.rmtree(cfg.TEST_DATADIRS)
+            for name in os.listdir(cfg.TEST_DATADIRS):
+                if name == 'pivx-params':
+                    continue
+                fullpath = os.path.join(cfg.TEST_DATADIRS, name)
+                if os.path.isdir(fullpath):
+                    shutil.rmtree(fullpath)
+                else:
+                    os.remove(fullpath)
 
         for i in range(NUM_NODES):
             prepareDir(cfg.TEST_DATADIRS, i, cls.network_key, cls.network_pubkey)
@@ -334,10 +347,10 @@ class Test(unittest.TestCase):
             cls.http_threads.append(t)
             t.start()
 
-        waitForRPC(wageRpc)
-        num_blocks = 500
+        waitForRPC(wage)
+        num_blocks = 1352  # CHECKLOCKTIMEVERIFY soft-fork activates at (regtest) block height 1351.
         logging.info('Mining %d digiwage blocks', num_blocks)
-        cls.wage_addr = digiwageRpc('getnewaddress mining_addr')
+        cls.wage_addr = wageRpc('getnewaddress mining_addr')
         wageRpc('generatetoaddress {} {}'.format(num_blocks, cls.wage_addr))
 
         ro = wageRpc('getblockchaininfo')
@@ -357,9 +370,6 @@ class Test(unittest.TestCase):
 
         ro = btcRpc('getblockchaininfo')
         checkForks(ro)
-
-        ro = wageRpc('getwalletinfo')
-        print('wageRpc', ro)
 
         signal.signal(signal.SIGINT, signal_handler)
         cls.update_thread = threading.Thread(target=run_loop, args=(cls,))
@@ -401,7 +411,7 @@ class Test(unittest.TestCase):
         logging.info('---------- Test PART to WAGE')
         swap_clients = self.swap_clients
 
-        offer_id = swap_clients[0].postOffer(Coins.PART, Coins.WAGE, 100 * COIN, 0.1 * COIN, 100 * COIN, SwapTypes.SELLER_FIRST)
+        offer_id = swap_clients[0].postOffer(Coins.PART, Coins.WAGE, 100 * COIN, 0.1 * COIN, 100 * COIN, SwapTypes.SELLER_FIRST, TxLockTypes.ABS_LOCK_TIME)
 
         wait_for_offer(delay_event, swap_clients[1], offer_id)
         offer = swap_clients[1].getOffer(offer_id)
@@ -425,7 +435,7 @@ class Test(unittest.TestCase):
         logging.info('---------- Test WAGE to PART')
         swap_clients = self.swap_clients
 
-        offer_id = swap_clients[1].postOffer(Coins.WAGE, Coins.PART, 10 * COIN, 9.0 * COIN, 10 * COIN, SwapTypes.SELLER_FIRST)
+        offer_id = swap_clients[1].postOffer(Coins.WAGE, Coins.PART, 10 * COIN, 9.0 * COIN, 10 * COIN, SwapTypes.SELLER_FIRST, TxLockTypes.ABS_LOCK_TIME)
 
         wait_for_offer(delay_event, swap_clients[0], offer_id)
         offer = swap_clients[0].getOffer(offer_id)
@@ -448,7 +458,7 @@ class Test(unittest.TestCase):
         logging.info('---------- Test WAGE to BTC')
         swap_clients = self.swap_clients
 
-        offer_id = swap_clients[0].postOffer(Coins.WAGE, Coins.BTC, 10 * COIN, 0.1 * COIN, 10 * COIN, SwapTypes.SELLER_FIRST)
+        offer_id = swap_clients[0].postOffer(Coins.WAGE, Coins.BTC, 10 * COIN, 0.1 * COIN, 10 * COIN, SwapTypes.SELLER_FIRST, TxLockTypes.ABS_LOCK_TIME)
 
         wait_for_offer(delay_event, swap_clients[1], offer_id)
         offer = swap_clients[1].getOffer(offer_id)
@@ -476,7 +486,7 @@ class Test(unittest.TestCase):
         swap_clients = self.swap_clients
 
         offer_id = swap_clients[0].postOffer(Coins.WAGE, Coins.BTC, 10 * COIN, 0.1 * COIN, 10 * COIN, SwapTypes.SELLER_FIRST,
-                                             TxLockTypes.SEQUENCE_LOCK_BLOCKS, 10)
+                                             TxLockTypes.ABS_LOCK_BLOCKS, 10)
 
         wait_for_offer(delay_event, swap_clients[1], offer_id)
         offer = swap_clients[1].getOffer(offer_id)
@@ -500,7 +510,7 @@ class Test(unittest.TestCase):
 
         js_0_before = read_json_api(1800)
 
-        offer_id = swap_clients[0].postOffer(Coins.WAGE, Coins.BTC, 10 * COIN, 10 * COIN, 10 * COIN, SwapTypes.SELLER_FIRST)
+        offer_id = swap_clients[0].postOffer(Coins.WAGE, Coins.BTC, 10 * COIN, 10 * COIN, 10 * COIN, SwapTypes.SELLER_FIRST, TxLockTypes.ABS_LOCK_TIME)
 
         wait_for_offer(delay_event, swap_clients[0], offer_id)
         offer = swap_clients[0].getOffer(offer_id)
@@ -522,7 +532,7 @@ class Test(unittest.TestCase):
 
         js_0_before = read_json_api(1800)
 
-        offer_id = swap_clients[0].postOffer(Coins.WAGE, Coins.BTC, 0.001 * COIN, 1.0 * COIN, 0.001 * COIN, SwapTypes.SELLER_FIRST)
+        offer_id = swap_clients[0].postOffer(Coins.WAGE, Coins.BTC, 0.001 * COIN, 1.0 * COIN, 0.001 * COIN, SwapTypes.SELLER_FIRST, TxLockTypes.ABS_LOCK_TIME)
 
         wait_for_offer(delay_event, swap_clients[0], offer_id)
         offer = swap_clients[0].getOffer(offer_id)
@@ -538,7 +548,7 @@ class Test(unittest.TestCase):
         logging.info('---------- Test {} wallet'.format(self.test_coin_from.name))
 
         logging.info('Test withdrawal')
-        addr = digiwageRpc('getnewaddress \"Withdrawal test\"')
+        addr = wageRpc('getnewaddress \"Withdrawal test\"')
         wallets = read_json_api(TEST_HTTP_PORT + 0, 'wallets')
         assert (float(wallets[self.test_coin_from.name]['balance']) > 100)
 
@@ -557,23 +567,44 @@ class Test(unittest.TestCase):
         json_rv = read_json_api(TEST_HTTP_PORT + 0, 'wallets/{}/createutxo'.format(self.test_coin_from.name.lower()), post_json)
         assert (len(json_rv['txid']) == 64)
 
-    def test_09_initialise_wallet(self):
-        logging.info('---------- Test WAGE initialiseWallet')
+    def test_09_v3_tx(self):
+        logging.info('---------- Test WAGE v3 txns')
 
-        self.swap_clients[0].initialiseWallet(Coins.WAGE, raise_errors=True)
-        assert self.swap_clients[0].checkWalletSeed(Coins.WAGE) is True
+        generate_addr = wageRpc('getnewaddress \"generate test\"')
+        #wage_addr = wageRpc('getnewaddress \"Sapling test\"')
+       # pivx_sapling_addr = wageRpc('getnewshieldaddress \"shield addr\"')
 
-        addr = digiwageRpc('getnewaddress \"hd wallet test\"')
-        assert addr == 'ybzWYJbZEhZai8kiKkTtPFKTuDNwhpiwac'
+        wageRpc(f'sendtoaddress \"{wage_addr}\" 2.0.1')
+        wageRpc(f'generatetoaddress 1 \"{generate_addr}\"')
 
-        logging.info('Test that getcoinseed returns a mnemonic for Dash')
-        mnemonic = read_json_api(1800, 'getcoinseed', {'coin': 'WAGE'})['mnemonic']
-        new_wallet_name = random.randbytes(10).hex()
-        digiwageRpc(f'createwallet \"{new_wallet_name}\"')
-        digiwageRpc(f'upgradetohd \"{mnemonic}\"', wallet=new_wallet_name)
-        addr_test = digiwageRpc('getnewaddress', wallet=new_wallet_name)
-        digiwageRpc('unloadwallet', wallet=new_wallet_name)
-        assert (addr_test == addr)
+        txid = wageRpc('shieldsendmany "{}" "[{{\\"address\\": \\"{}\\", \\"amount\\": 1}}]"'.format(wage_addr, generate_addr))
+        rtx = wageRpc(f'getrawtransaction \"{txid}\" true')
+        assert (rtx['version'] == 3)
+
+        block_hash = wageRpc(f'generatetoaddress 1 \"{generate_addr}\"')[0]
+
+        ci = self.swap_clients[0].ci(Coins.WAGE)
+        block = ci.getBlockWithTxns(block_hash)
+
+        found = False
+        for tx in block['tx']:
+            if txid == tx['txid']:
+                found = True
+                break
+        assert found
+
+    def ensure_balance(self, coin_type, node_id, amount):
+        tla = coin_type.name
+        js_w = read_json_api(1800 + node_id, 'wallets')
+        if float(js_w[tla]['balance']) < amount:
+            post_json = {
+                'value': amount,
+                'address': js_w[tla]['deposit_address'],
+                'subfee': False,
+            }
+            json_rv = read_json_api(1800, 'wallets/{}/withdraw'.format(tla.lower()), post_json)
+            assert (len(json_rv['txid']) == 64)
+            wait_for_balance(delay_event, 'http://127.0.0.1:{}/json/wallets/{}'.format(1800 + node_id, tla.lower()), 'balance', amount)
 
     def test_10_prefunded_itx(self):
         logging.info('---------- Test prefunded itx offer')
@@ -587,41 +618,31 @@ class Test(unittest.TestCase):
         tla_from = coin_from.name
 
         # Prepare balance
-        js_w2 = read_json_api(1802, 'wallets')
-        if float(js_w2[tla_from]['balance']) < 100.0:
-            post_json = {
-                'value': 100,
-                'address': js_w2[tla_from]['deposit_address'],
-                'subfee': False,
-            }
-            json_rv = read_json_api(1800, 'wallets/{}/withdraw'.format(tla_from.lower()), post_json)
-            assert (len(json_rv['txid']) == 64)
-            wait_for_balance(delay_event, 'http://127.0.0.1:1802/json/wallets/{}'.format(tla_from.lower()), 'balance', 100.0)
-
-        js_w2 = read_json_api(1802, 'wallets')
-        assert (float(js_w2[tla_from]['balance']) >= 100.0)
+        self.ensure_balance(coin_from, 2, 10.0)
+        self.ensure_balance(coin_to, 1, 100.0)
 
         js_w2 = read_json_api(1802, 'wallets')
         post_json = {
-            'value': 100.0,
+            'value': 10.0,
             'address': read_json_api(1802, 'wallets/{}/nextdepositaddr'.format(tla_from.lower())),
             'subfee': True,
         }
         json_rv = read_json_api(1802, 'wallets/{}/withdraw'.format(tla_from.lower()), post_json)
-        wait_for_balance(delay_event, 'http://127.0.0.1:1802/json/wallets/{}'.format(tla_from.lower()), 'balance', 10.0)
+        wait_for_balance(delay_event, 'http://127.0.0.1:1802/json/wallets/{}'.format(tla_from.lower()), 'balance', 9.0)
         assert (len(json_rv['txid']) == 64)
 
         # Create prefunded ITX
         pi = swap_clients[2].pi(SwapTypes.XMR_SWAP)
         js_w2 = read_json_api(1802, 'wallets')
-        swap_value = 100.0
+        swap_value = 10.0
         if float(js_w2[tla_from]['balance']) < swap_value:
             swap_value = js_w2[tla_from]['balance']
         swap_value = ci_from.make_int(swap_value)
-        assert (swap_value > ci_from.make_int(95))
+        assert (swap_value > ci_from.make_int(9))
 
         itx = pi.getFundedInitiateTxTemplate(ci_from, swap_value, True)
         itx_decoded = ci_from.describeTx(itx.hex())
+
         n = pi.findMockVout(ci_from, itx_decoded)
         value_after_subfee = ci_from.make_int(itx_decoded['vout'][n]['value'])
         assert (value_after_subfee < swap_value)
@@ -629,8 +650,8 @@ class Test(unittest.TestCase):
         wait_for_unspent(delay_event, ci_from, swap_value)
 
         extra_options = {'prefunded_itx': itx}
-        rate_swap = ci_to.make_int(random.uniform(0.2, 20.0), r=1)
-        offer_id = swap_clients[2].postOffer(coin_from, coin_to, swap_value, rate_swap, swap_value, swap_type, extra_options=extra_options)
+        rate_swap = ci_to.make_int(random.uniform(0.2, 10.0), r=1)
+        offer_id = swap_clients[2].postOffer(coin_from, coin_to, swap_value, rate_swap, swap_value, swap_type, TxLockTypes.ABS_LOCK_TIME, extra_options=extra_options)
 
         wait_for_offer(delay_event, swap_clients[1], offer_id)
         offer = swap_clients[1].getOffer(offer_id)
