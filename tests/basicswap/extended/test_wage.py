@@ -347,7 +347,7 @@ class Test(unittest.TestCase):
             cls.http_threads.append(t)
             t.start()
 
-        waitForRPC(wage)
+        waitForRPC(wageRpc)
         num_blocks = 1352  # CHECKLOCKTIMEVERIFY soft-fork activates at (regtest) block height 1351.
         logging.info('Mining %d digiwage blocks', num_blocks)
         cls.wage_addr = wageRpc('getnewaddress mining_addr')
