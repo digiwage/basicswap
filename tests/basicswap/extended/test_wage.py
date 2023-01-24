@@ -7,7 +7,7 @@
 
 """
 basicswap]$ python tests/basicswap/extended/test_wage.py
-
+revert tests.
 """
 
 import os
