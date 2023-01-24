@@ -599,7 +599,7 @@ class BasicSwap(BaseApp):
             authcookiepath = os.path.join(self.getChainDatadirPath(coin), '.cookie')
 
             pidfilename = cc['name']
-            if cc['name'] in ('bitcoin', 'litecoin', 'namecoin', 'dash', 'firo', "digiwage"):
+            if cc['name'] in ('bitcoin', 'litecoin', 'namecoin', 'dash', 'firo'):
                 pidfilename += 'd'
 
             pidfilepath = os.path.join(self.getChainDatadirPath(coin), pidfilename + '.pid')
