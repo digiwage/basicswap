@@ -179,7 +179,7 @@ def prepareDir(datadir, nodeId, network_key, network_pubkey):
                 'connection_type': 'rpc',
                 'manage_daemon': False,
                 'rpcport': BASE_RPC_PORT + WAGE_NODE,
-                'datadir': digiwagedatadir,
+                'datadir': wagedatadir,
                 'bindir': cfg.WAGE_BINDIR,
                 'use_csv': True,
                 'use_segwit': False,
