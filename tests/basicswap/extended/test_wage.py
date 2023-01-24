@@ -73,7 +73,7 @@ from tests.basicswap.common import (
     PREFIX_SECRET_KEY_REGTEST,
 )
 from bin.basicswap_run import startDaemon
-from bin.basicswap_prepare import downloadPIVXParams
+#from bin.basicswap_prepare import downloadPIVXParams
 
 
 logger = logging.getLogger()
@@ -104,8 +104,10 @@ def prepareOtherDir(datadir, nodeId, conf_file='digiwage.conf'):
 
         salt = generate_salt(16)
         if conf_file == 'digiwage.conf':
-            fp.write('rpcuser={}\n'.format('test' + str(nodeId)))
-            fp.write('rpcpassword={}\n'.format('test_pass' + str(nodeId)))
+            #fp.write('rpcuser={}\n'.format('test' + str(nodeId)))
+            fp.write('rpcuser=rpcuser')
+            #fp.write('rpcpassword={}\n'.format('test_pass' + str(nodeId)))
+            fp.write('rpcpassword=rpcpassword')
             #fp.write('rpcauth={}:{}${}\n'.format('test' + str(nodeId), salt, password_to_hmac(salt, 'test_pass' + str(nodeId))))
 
         fp.write('daemon=0\n')

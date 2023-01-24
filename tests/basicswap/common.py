@@ -14,7 +14,7 @@ from urllib.request import urlopen
 from .util import read_json_api
 from basicswap.rpc import callrpc
 from basicswap.contrib.rpcauth import generate_salt, password_to_hmac
-from bin.basicswap_prepare import downloadPIVXParams
+#from bin.basicswap_prepare import downloadPIVXParams
 
 
 TEST_HTTP_HOST = os.getenv('TEST_HTTP_HOST', '127.0.0.1')  # Set to 0.0.0.0 when used in docker
@@ -38,6 +38,10 @@ LTC_BASE_ZMQ_PORT = 36792
 PIVX_BASE_PORT = 34892
 PIVX_BASE_RPC_PORT = 35892
 PIVX_BASE_ZMQ_PORT = 36892
+
+WAGE_BASE_PORT = 34992
+WAGE_BASE_RPC_PORT = 35992
+WAGE_BASE_ZMQ_PORT = 36992
 
 PREFIX_SECRET_KEY_REGTEST = 0x2e
 

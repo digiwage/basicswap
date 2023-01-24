@@ -66,6 +66,7 @@ class Test(BaseTest):
         cls.start_ltc_nodes = True
         cls.start_xmr_nodes = False
         cls.start_pivx_nodes = False
+        cls.start_wage_nodes = False
         super(Test, cls).setUpClass()
 
         btc_addr1 = callnoderpc(1, 'getnewaddress', ['initial funds', 'bech32'], base_rpc_port=BTC_BASE_RPC_PORT)
