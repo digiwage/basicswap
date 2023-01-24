@@ -97,6 +97,9 @@ def prepareOtherDir(datadir, nodeId, conf_file='digiwage.conf'):
         fp.write('port=' + str(BASE_PORT + nodeId) + '\n')
         fp.write('rpcport=' + str(BASE_RPC_PORT + nodeId) + '\n')
 
+        fp.write('rpcuser=rpcuser\n')
+        fp.write('rpcpassword=rpcpassword\n')
+
         fp.write('daemon=0\n')
         fp.write('printtoconsole=0\n')
         fp.write('server=1\n')
